@@ -7,25 +7,31 @@ import (
 	"net/http"
 	"os"
 
-	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *sql.DB
 
 func initDB() error {
-    databaseURL := os.Getenv("DATABASE_URL")
-    if databaseURL == "" {
-        return fmt.Errorf("DATABASE_URL environment variable is not set")
-    }
-
     var err error
-    db, err = sql.Open("postgres", databaseURL)
+    db, err = sql.Open("sqlite3", "./arduino.db")
     if err != nil {
-        return fmt.Errorf("error opening database: %v", err)
+        return fmt.Errorf("ошибка открытия базы данных: %v", err)
     }
 
     if err := db.Ping(); err != nil {
-        return fmt.Errorf("error pinging database: %v", err)
+        return fmt.Errorf("ошибка подключения к базе данных: %v", err)
+    }
+
+    // Создание таблицы, если она не существует
+    createTableQuery := `
+    CREATE TABLE IF NOT EXISTS arduino_control (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        state INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );`
+    if _, err := db.Exec(createTableQuery); err != nil {
+        return fmt.Errorf("ошибка создания таблицы: %v", err)
     }
 
     return nil
