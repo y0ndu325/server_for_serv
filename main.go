@@ -13,9 +13,9 @@ import (
 var db *sql.DB
 
 func initDB() error {
-    databaseURL := os.Getenv("postgresql://postgres:ppiPYOGcdgsnUbvKhObjFHoTsPJaeAAT@postgres.railway.internal:5432/railway")
+    databaseURL := os.Getenv("DATABASE_URL")
     if databaseURL == "" {
-        return fmt.Errorf("DATABASE_URL environment variable is not set")
+        databaseURL = "postgresql://postgres:ppiPYOGcdgsnUbvKhObjFHoTsPJaeAAT@postgres.railway.internal:5432/railway"
     }
 
     var err error
