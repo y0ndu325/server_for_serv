@@ -15,7 +15,7 @@ var db *sql.DB
 func initDB() error {
     databaseURL := os.Getenv("DATABASE_URL")
     if databaseURL == "" {
-        databaseURL = "postgresql://postgres:ppiPYOGcdgsnUbvKhObjFHoTsPJaeAAT@postgres.railway.internal:5432/railway"
+        databaseURL = "postgresql://postgres:ppiPYOGcdgsnUbvKhObjFHoTsPJaeAAT@tramway.proxy.rlwy.net:18445/railway"
     }
 
     var err error
