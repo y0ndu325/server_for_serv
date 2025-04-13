@@ -7,34 +7,41 @@ import (
 	"net/http"
 	"os"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
+
+var (
+	host     = getEnv("PGHOST", "localhost")
+	user     = getEnv("PGUSER", "postgres")
+	port     = getEnv("PGPORT", "5432")
+	password = getEnv("PGPASSWORD", "password")
+	dbname   = getEnv("PGDATABASE", "postgres")
+)
+
+func getEnv(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
+}
 
 var db *sql.DB
 
 func initDB() error {
-    var err error
-    db, err = sql.Open("sqlite3", "./arduino.db")
-    if err != nil {
-        return fmt.Errorf("ошибка открытия базы данных: %v", err)
-    }
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
 
-    if err := db.Ping(); err != nil {
-        return fmt.Errorf("ошибка подключения к базе данных: %v", err)
-    }
+	var err error
+	db, err = sql.Open("postgres", connStr)
+	if err != nil {
+		return fmt.Errorf("error opening database: %v", err)
+	}
 
-    // Создание таблицы, если она не существует
-    createTableQuery := `
-    CREATE TABLE IF NOT EXISTS arduino_control (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        state INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );`
-    if _, err := db.Exec(createTableQuery); err != nil {
-        return fmt.Errorf("ошибка создания таблицы: %v", err)
-    }
+	if err := db.Ping(); err != nil {
+		return fmt.Errorf("error pinging database: %v", err)
+	}
 
-    return nil
+	return nil
 }
 
 func ardHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +60,6 @@ func ardHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid state value", http.StatusBadRequest)
 			return
 		}
-
 		query := `INSERT INTO arduino_control (state) VALUES ($1)`
 		_, err := db.Exec(query, state)
 		if err != nil {
@@ -80,15 +86,12 @@ func main() {
 		log.Fatalf("error initializing database: %v", err)
 	}
 	defer db.Close()
-
 	http.HandleFunc("/", ardHandler)
 	http.HandleFunc("/get_state", getStateHandler)
-
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "4000"
 	}
-
 	fmt.Printf("Server started on: http://localhost:%s\n", port)
 	err = http.ListenAndServe("0.0.0.0:"+port, nil)
 	if err != nil {
