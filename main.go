@@ -10,38 +10,25 @@ import (
 	_ "github.com/lib/pq"
 )
 
-var (
-	host     = getEnv("PGHOST", "localhost")
-	user     = getEnv("PGUSER", "postgres")
-	port     = getEnv("PGPORT", "5432")
-	password = getEnv("PGPASSWORD", "password")
-	dbname   = getEnv("PGDATABASE", "postgres")
-)
-
-func getEnv(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultValue
-}
-
 var db *sql.DB
 
 func initDB() error {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+    databaseURL := os.Getenv("DATABASE_URL")
+    if databaseURL == "" {
+        return fmt.Errorf("DATABASE_URL environment variable is not set")
+    }
 
-	var err error
-	db, err = sql.Open("postgres", connStr)
-	if err != nil {
-		return fmt.Errorf("error opening database: %v", err)
-	}
+    var err error
+    db, err = sql.Open("postgres", databaseURL)
+    if err != nil {
+        return fmt.Errorf("error opening database: %v", err)
+    }
 
-	if err := db.Ping(); err != nil {
-		return fmt.Errorf("error pinging database: %v", err)
-	}
+    if err := db.Ping(); err != nil {
+        return fmt.Errorf("error pinging database: %v", err)
+    }
 
-	return nil
+    return nil
 }
 
 func ardHandler(w http.ResponseWriter, r *http.Request) {
